@@ -30,7 +30,7 @@
 - Google Breakpad: `v2024.02.16`
 - configure:
   - 无视 Breakpad 的 `configure.ac`, 直接用它自带的 `configure`
-  - 传递给 `configure` 的参数需要包含 `--enable-selftest`.
+  - 传递给 `configure` 的参数至少需要包含 `--enable-selftest`; 至多只允许额外加一个 `--enable-zstd`, 而且必须得用户明确要求
   - `{C,CXX}FLAGS` 需包含 `-Og -g`
 - Breakpad 测试: 创建 container 时须指定 `--tmpfs /tmp:exec`, 否则 `make check` 会有测试失败:
   - 不带 `--tmpfs` 时 `/tmp` 位于 overlayfs 上, 可能不支持 `O_TMPFILE` (而 `google_breakpad::ScopedTmpFile` 依赖它);
