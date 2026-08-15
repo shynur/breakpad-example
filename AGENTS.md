@@ -35,8 +35,8 @@
 
 无视 Breakpad 的 `configure.ac`, 直接用它自带的 `configure`.
 
-传递给 `configure` 的参数至少需要包含 `--enable-selftest`.
-至多只允许额外加一个 `--enable-zstd`, 而且必须得用户明确要求.
+对于 `configure` 可接受的 breakpad 特有的 package options,
+我们规定只有 `--enable-zstd` 允许被添加, 而且必须得用户明确要求.
 
 `{C,CXX}FLAGS` 需包含 `-Og -g`.
 
