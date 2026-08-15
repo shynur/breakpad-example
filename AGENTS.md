@@ -58,14 +58,15 @@
 我们要重点关注的是以下组件:
 
 ```
-├── bin
+├── bin/
+│   ├── core2md
 │   ├── dump_syms
-│   ├── sym_upload
-│   ├── minidump_upload
-│   └── minidump_stackwalk
-├── include/breakpad
-└── lib
+│   ├── minidump-2-core
+│   ├── minidump_dump
+│   ├── minidump_stackwalk
+│   └── pid2md
+├── include/breakpad/
+└── lib/
     ├── libbreakpad_client.a
-    └── pkgconfig
-        └── breakpad-client.pc
+    └── pkgconfig/breakpad-client.pc
 ```
