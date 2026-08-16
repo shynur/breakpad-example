@@ -8,8 +8,11 @@ int main() {
     auto breakpad_handler = ::google_breakpad::ExceptionHandler{
         ::google_breakpad::MinidumpDescriptor{
             [](const std::string minidump_dir) {
-                std::system(("mkdir -p " + minidump_dir).c_str());
-                return minidump_dir;
+                if (std::system(("mkdir -p " + minidump_dir).c_str()) == 0)
+                    return minidump_dir;
+                const std::string default_dir = "/tmp/breakpad-minidumps-default-dir";
+                std::system(("mkdir -p " + default_dir).c_str());
+                return default_dir;
             }("/tmp/breakpad-example-minidumps")
         },  // Minidump 输出位置
         [](void *const context [[maybe_unused]]) {
