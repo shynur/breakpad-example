@@ -6,10 +6,13 @@ static char g_app_state[16];  // 希望随 minidump 一起采集的内存
 int main() {
     auto breakpad_handler = ::google_breakpad::ExceptionHandler{
         ::google_breakpad::MinidumpDescriptor{"."},  // Minidump 输出位置
-        [](void *const context) {
+        [](void *const context [[maybe_unused]]) {
             return true;
         },
-        [](const ::google_breakpad::MinidumpDescriptor&, void *const context, const bool succeeded){
+        [](
+           const ::google_breakpad::MinidumpDescriptor&,
+           void *const context [[maybe_unused]],
+           const bool succeeded) {
             return succeeded;
         },
         nullptr,  // context
@@ -18,6 +21,6 @@ int main() {
     };
     breakpad_handler.RegisterAppMemory(g_app_state, sizeof g_app_state);
 
-    g_app_state[10] = 666;
+    g_app_state[10] = 6;
     std::raise(SIGSEGV);
 }
