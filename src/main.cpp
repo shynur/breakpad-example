@@ -1,5 +1,7 @@
 #include <csignal>
 #include <cstdlib>
+#include <string>
+#include <iostream>
 #include "client/linux/handler/exception_handler.h"
 
 static char g_app_state[16];  // 希望随 minidump 一起采集的内存
@@ -10,6 +12,7 @@ int main() {
             [](const std::string minidump_dir) {
                 if (std::system(("mkdir -p " + minidump_dir).c_str()) == 0)
                     return minidump_dir;
+                std::cerr << "用户指定的用于存放 breakpad minidump 的目录无法创建\n";
                 const std::string default_dir = "/tmp/breakpad-minidumps-default-dir";
                 std::system(("mkdir -p " + default_dir).c_str());
                 return default_dir;
