@@ -7,12 +7,14 @@ int main() {
     auto breakpad_handler = ::google_breakpad::ExceptionHandler{
         ::google_breakpad::MinidumpDescriptor{"."},  // Minidump 输出位置
         [](void *const context [[maybe_unused]]) {
-            return true;
+            return true;  // 是否 dump
         },
         [](
            const ::google_breakpad::MinidumpDescriptor&,
            void *const context [[maybe_unused]],
-           const bool succeeded) {
+           const bool succeeded
+        ) {
+            // dump 后处理...
             return succeeded;
         },
         nullptr,  // context
