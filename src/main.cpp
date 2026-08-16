@@ -1,15 +1,23 @@
 #include <csignal>
 #include "client/linux/handler/exception_handler.h"
 
-int main() {
-    auto _breakpad_handler = ::google_breakpad::ExceptionHandler{
-        ::google_breakpad::MinidumpDescriptor{"."},  // Minidump 输出位置
-        nullptr,  // 崩溃过滤回调: 不需要
-        nullptr,  // Minidump 写完后的回调: 暂不需要
-        nullptr,  // 传递给回调的上下文
-        true,     // 安装崩溃信号处理器
-        -1        // 不连接外部 crash server, 在进程内生成 dump
-    };  // 绝不能声明为 const
+static char g_app_state[16];  // 希望随 minidump 一起采集的内存
 
+int main() {
+    auto breakpad_handler = ::google_breakpad::ExceptionHandler{
+        ::google_breakpad::MinidumpDescriptor{"."},  // Minidump 输出位置
+        [](void *const context) {
+            return true;
+        },
+        [](const ::google_breakpad::MinidumpDescriptor&, void *const context, const bool succeeded){
+            return succeeded;
+        },
+        nullptr,  // context
+        true,     // 要安装崩溃 signal-handler
+        -1        // 不连接外部 crash server, 在进程内生成 dump
+    };
+    breakpad_handler.RegisterAppMemory(g_app_state, sizeof g_app_state);
+
+    g_app_state[10] = 666;
     std::raise(SIGSEGV);
 }
