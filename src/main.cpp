@@ -19,7 +19,7 @@ int main() {
             }("/tmp/breakpad-example-minidumps")
         },  // Minidump 输出位置
         [](void *const context [[maybe_unused]]) {
-            // dump 前处理...
+            // dump 前处理... (thread-safe / async-signal-safe)
             return true;  // 是否 dump
         },
         [](
@@ -27,7 +27,7 @@ int main() {
            void *const context [[maybe_unused]],
            const bool succeeded
         ) {
-            // dump 后处理...
+            // dump 后处理... (thread-safe / async-signal-safe)
             return succeeded;
         },
         nullptr,  // context
