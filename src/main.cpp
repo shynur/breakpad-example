@@ -1,12 +1,19 @@
 #include <csignal>
+#include <cstdlib>
 #include "client/linux/handler/exception_handler.h"
 
 static char g_app_state[16];  // 希望随 minidump 一起采集的内存
 
 int main() {
     auto breakpad_handler = ::google_breakpad::ExceptionHandler{
-        ::google_breakpad::MinidumpDescriptor{"."},  // Minidump 输出位置
+        ::google_breakpad::MinidumpDescriptor{
+            [](const std::string minidump_dir) {
+                std::system("mkdir -p " + minidump_dir);
+                return minidump_dir;
+            }("/tmp/breakpad-example-minidumps")
+        },  // Minidump 输出位置
         [](void *const context [[maybe_unused]]) {
+            // dump 前处理...
             return true;  // 是否 dump
         },
         [](
