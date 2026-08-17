@@ -41,8 +41,6 @@
 对于 `configure` 可接受的 breakpad 特有的 package options, 我们规定只有 `--enable-zstd` 允许被添加.
 是否要传递 `--enable-zstd` 必须得用户明确要求; 你也可根据测试环境, 及时给出建议.
 
-`{C,CXX}FLAGS` 需包含 `-Og -g`.
-
 ### Test
 
 创建 container 时须指定 `--tmpfs /tmp:exec`, 否则 `make check` 会有测试失败:
