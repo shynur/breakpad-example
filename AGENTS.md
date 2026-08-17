@@ -23,7 +23,7 @@
 
 ### 环境信息
 
-- Arch: x64 or arm64 (一定是 64-bit)
+- Arch: x64 or arm64 (反正一定是 64-bit)
 - 操作系统: Ubuntu 18.04
 - 编译器工具链: `clang++-6` + `libstdc++-7`
 - CMake: 使用 Kitware 官方脚本安装 CMake `3.23.5`
