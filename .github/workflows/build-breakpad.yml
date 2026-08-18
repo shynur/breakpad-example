@@ -1,0 +1,138 @@
+name: build-breakpad
+
+# 手动触发. 在 Ubuntu 18.04 容器 (x64 与 arm64) 中分别执行:
+#   packaging/build-conan-and-deb.bash -t v2024.02.16 -b `TZ=Asia/Shanghai date +%Y%m%d%H%M` -o <输出目录>
+# 其中 -t 与 -b 由 prepare job 统一生成, 保证两个环境中一致.
+# 构建出的 4 个包 (conan+deb × x64/arm64) 上传到 tag 为 v<MY_BREAKPAD_VERSION> 的 release.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  BREAKPAD_TAG: v2024.02.16
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.vars.outputs.tag }}
+      build_metadata: ${{ steps.vars.outputs.build_metadata }}
+      version: ${{ steps.vars.outputs.version }}
+    steps:
+      - id: vars
+        run: |
+          tag="${{ env.BREAKPAD_TAG }}"
+          build_metadata="$(TZ=Asia/Shanghai date +%Y%m%d%H%M)"
+          version="${tag#v}+${build_metadata}"
+          echo "tag=$tag"                 >> "$GITHUB_OUTPUT"
+          echo "build_metadata=$build_metadata" >> "$GITHUB_OUTPUT"
+          echo "version=$version"         >> "$GITHUB_OUTPUT"
+          echo "MY_BREAKPAD_VERSION=$version"
+
+  build:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux/amd64, isa: x64 }
+          - { platform: linux/arm64, isa: arm64 }
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+        if: matrix.isa == 'arm64'
+        with:
+          platforms: linux/arm64
+
+      - name: 启动全新的 Ubuntu 18.04 构建容器
+        run: |
+          mkdir -p out
+          docker run -d --name builder --platform "${{ matrix.platform }}" \
+            --tmpfs /tmp:exec \
+            -v "$GITHUB_WORKSPACE:/src:ro" \
+            -v "$GITHUB_WORKSPACE/out:/out" \
+            ubuntu:18.04 sleep infinity
+
+      - name: 在容器内安装所需软件
+        run: |
+          docker exec builder bash -euxo pipefail -c '
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              clang-6.0 g++-7 make git curl ca-certificates \
+              pkg-config libzstd-dev zlib1g-dev \
+              python3.7 python3.7-distutils \
+              dpkg-dev binutils xz-utils file tar gzip
+            # JFrog Conan 1.57 (需要 Python >= 3.7; Ubuntu 18.04 自带 3.6)
+            curl -fsSL https://bootstrap.pypa.io/pip/3.7/get-pip.py -o /tmp/get-pip.py
+            python3.7 /tmp/get-pip.py
+            python3.7 -m pip install conan==1.57.0
+            conan --version
+            # CMake 3.23.5 (Kitware 官方脚本)
+            curl -fsSL -o /tmp/cmake.sh \
+              "https://github.com/Kitware/CMake/releases/download/v3.23.5/cmake-3.23.5-linux-$(uname -m).sh"
+            bash /tmp/cmake.sh --prefix=/usr/local --skip-license
+            cmake --version | head -1
+          '
+
+      - name: 构建 conan package 与 Debian package
+        run: |
+          docker exec builder bash /src/packaging/build-conan-and-deb.bash \
+            -t "${{ needs.prepare.outputs.tag }}" \
+            -b "${{ needs.prepare.outputs.build_metadata }}" \
+            -o /out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.isa }}
+          path: out/
+          if-no-files-found: error
+
+  release:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: packages-*
+          merge-multiple: true
+          path: dist
+
+      - name: 上传 4 个包到 release v${{ needs.prepare.outputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          cd dist
+          ls -la
+          set -- *.deb;          test "$#" = 2
+          set -- *.conan.tar.gz; test "$#" = 2
+          cat > notes.md <<EOF
+          Google Breakpad \`$VERSION\` (tag \`$BREAKPAD_TAG\` + build metadata, \`--enable-zstd\`).
+
+          每个 ISA 后缀 (\`-x64\` / \`-arm64\`) 各有两个包, 内含完全相同的安装目录
+          (\`bin/\` \`include/breakpad/\` \`lib/\`, 其中 bin/ 下每个工具附有同名 .bash 启动脚本):
+
+          - \`*.deb\`: Debian package, 安装到 \`/opt/breakpad\` (\`dpkg -i\`).
+          - \`*.conan.tar.gz\`: Conan package (JFrog Conan 1.x), 导入本地 cache:
+            \`\`\`
+            tar xf breakpad-$VERSION-x64.conan.tar.gz
+            cd breakpad-$VERSION-x64-conan
+            conan export-pkg . breakpad/$VERSION@ -pf package
+            \`\`\`
+          EOF
+          # 幂等: release 已存在 (如重跑同一分钟触发的 run) 则覆盖上传
+          gh release create "v$VERSION" \
+            --title "breakpad $VERSION" \
+            --notes-file notes.md \
+            --target "${{ github.sha }}" \
+            ./*.deb ./*.conan.tar.gz \
+          || gh release upload "v$VERSION" --clobber ./*.deb ./*.conan.tar.gz
