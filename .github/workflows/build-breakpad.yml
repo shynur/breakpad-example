@@ -108,6 +108,7 @@ jobs:
       - name: 上传 4 个包到 release v${{ needs.prepare.outputs.version }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}  # 本 job 无 checkout, gh 不能依赖本地 git 仓库
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
