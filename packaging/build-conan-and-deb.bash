@@ -24,7 +24,8 @@
 #          (把安装前缀下的 lib/ 加入 LD_LIBRARY_PATH 后 exec 同名工具)
 #   include/breakpad/
 #   lib/   libbreakpad*.a, pkgconfig/breakpad-client.pc, 以及基础系统不保证
-#          提供而 bin/ 工具需要的 .so (如 libzstd.so.1)
+#          提供而 bin/ 工具需要的 .so (如 libzstd.so.1; 仅供 bin/*.bash 使用,
+#          只随 Debian package 分发, conan package 中会剔除 lib/lib*.so*)
 #
 # Conan package 的使用 (JFrog Conan 1.x):
 #   tar xf breakpad-v<VERSION>-<ISA>.conan.tar.gz
@@ -213,6 +214,9 @@ dpkg-deb "${dpkg_opts[@]}" --build "$DEB_ROOT" "$DEB_FILE"
 CONAN_DIR=$WORK/conan
 mkdir -p "$CONAN_DIR"
 cp -a "$STAGE" "$CONAN_DIR/package"
+# 捆绑的 .so 仅供 Debian package 的 bin/*.bash 使用; conan package 中剔除,
+# 避免随 consumer 的依赖部署机制 (如 conan IMPORTS) 影响 consumer.
+find "$CONAN_DIR/package/lib" -maxdepth 1 -name 'lib*.so*' -delete
 cat >"$CONAN_DIR/conanfile.py" <<'EOF'
 import os
 

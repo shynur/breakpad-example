@@ -96,6 +96,8 @@ packaging/build-conan-and-deb.bash -t <breakpad tag> -b <build metadata> -o <输
 - 安装目录在后处理后包含: `bin/` 全部工具 + 每个工具的同名 `.bash` 启动脚本
   (把安装前缀下的 `lib/` 加入 `LD_LIBRARY_PATH`), `include/breakpad/`,
   `lib/` (另捆绑基础系统不保证提供的 `libzstd.so.1`).
+  捆绑的 .so 仅供 `bin/*.bash` 使用, 只随 Debian package 分发; conan package 会剔除 `lib/lib*.so*` 以免影响 consumer
+  (因此 conan package 中的 bin/ 工具需目标系统自装 `libzstd1` 才能直接运行; consumer 通常只用头文件与静态库).
 - 环境依赖: conan 1.x 需要 Python ≥ 3.7 (Ubuntu 18.04 自带 3.6, 须另装, 如 distro 的 `python3.7` + get-pip);
   其余见上文"构建依赖". conan 操作在隔离的临时 `CONAN_USER_HOME` 中进行.
 
