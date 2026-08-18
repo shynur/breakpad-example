@@ -89,8 +89,9 @@ packaging/build-conan-and-deb.bash -t <breakpad tag> -b <build metadata> -o <输
 
 - 版本号 `MY_BREAKPAD_VERSION = <tag 去前导 v>+<build metadata>`, 如 `2024.02.16+201212311200`.
 - 产物 (ISA 后缀: x86_64→`-x64`, aarch64→`-arm64`):
-  - `breakpad-<MY_BREAKPAD_VERSION>-<ISA>.deb` — 安装到 `/opt/breakpad`.
-  - `breakpad-<MY_BREAKPAD_VERSION>-<ISA>.conan.tar.gz` — 含 `conanfile.py` + `package/`, 导入:
+  - `breakpad-v<MY_BREAKPAD_VERSION>-<ISA>.deb` — 安装到 `/opt/breakpad`.
+  - `breakpad-v<MY_BREAKPAD_VERSION>-<ISA>.conan.tar.gz` — 顶层目录 `breakpad-v<MY_BREAKPAD_VERSION>-<ISA>-conan/`
+    (含 `conanfile.py` + `package/`), 导入:
     `conan export-pkg . breakpad/<MY_BREAKPAD_VERSION>@ -pf package` (JFrog Conan 1.x).
 - 安装目录在后处理后包含: `bin/` 全部工具 + 每个工具的同名 `.bash` 启动脚本
   (把安装前缀下的 `lib/` 加入 `LD_LIBRARY_PATH`), `include/breakpad/`,

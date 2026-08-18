@@ -7,8 +7,8 @@
 #   build-conan-and-deb.bash -t <breakpad tag> -b <build metadata> -o <输出目录>
 #
 # 产物 (ISA 后缀由构建机决定: x86_64→x64, aarch64→arm64):
-#   <输出目录>/breakpad-<MY_BREAKPAD_VERSION>-<ISA>.deb
-#   <输出目录>/breakpad-<MY_BREAKPAD_VERSION>-<ISA>.conan.tar.gz
+#   <输出目录>/breakpad-v<MY_BREAKPAD_VERSION>-<ISA>.deb
+#   <输出目录>/breakpad-v<MY_BREAKPAD_VERSION>-<ISA>.conan.tar.gz
 # 其中 MY_BREAKPAD_VERSION = <tag 去掉前导 v>+<build metadata>,
 # 例如 2024.02.16+201212311200.
 #
@@ -27,8 +27,8 @@
 #          提供而 bin/ 工具需要的 .so (如 libzstd.so.1)
 #
 # Conan package 的使用 (JFrog Conan 1.x):
-#   tar xf breakpad-<VERSION>-<ISA>.conan.tar.gz
-#   cd breakpad-<VERSION>-<ISA>-conan
+#   tar xf breakpad-v<VERSION>-<ISA>.conan.tar.gz
+#   cd breakpad-v<VERSION>-<ISA>-conan
 #   conan export-pkg . breakpad/<VERSION>@ -pf package
 #===============================================================================
 set -euo pipefail
@@ -204,7 +204,7 @@ dpkg_opts=()
 [[ $(dpkg-deb --help 2>&1) == *--root-owner-group* ]] && dpkg_opts+=(--root-owner-group)
 ART_OUT=$WORK/out  # 产物先落在临时目录, 全部成功后再 mv 进输出目录
 mkdir -p "$ART_OUT"
-DEB_FILE=$ART_OUT/breakpad-$MY_BREAKPAD_VERSION-$ISA_SUFFIX.deb
+DEB_FILE=$ART_OUT/breakpad-v$MY_BREAKPAD_VERSION-$ISA_SUFFIX.deb
 dpkg-deb "${dpkg_opts[@]}" --build "$DEB_ROOT" "$DEB_FILE"
 
 #-------------------------------------------------------------------------------
@@ -257,11 +257,11 @@ conan profile get settings.compiler default >/dev/null 2>&1 \
 conan profile update settings.compiler.libcxx=libstdc++11 default >/dev/null
 conan create "$CONAN_DIR" "breakpad/$MY_BREAKPAD_VERSION@"
 
-ART_DIR=$WORK/artifact/breakpad-$MY_BREAKPAD_VERSION-$ISA_SUFFIX-conan
+ART_DIR=$WORK/artifact/breakpad-v$MY_BREAKPAD_VERSION-$ISA_SUFFIX-conan
 mkdir -p "$ART_DIR"
 cp "$CONAN_DIR/conanfile.py" "$ART_DIR/"
 cp -a "$CONAN_DIR/package" "$ART_DIR/"
-CONAN_FILE=$ART_OUT/breakpad-$MY_BREAKPAD_VERSION-$ISA_SUFFIX.conan.tar.gz
+CONAN_FILE=$ART_OUT/breakpad-v$MY_BREAKPAD_VERSION-$ISA_SUFFIX.conan.tar.gz
 tar -czf "$CONAN_FILE" -C "$WORK/artifact" "$(basename "$ART_DIR")"
 
 # 全部成功, 移交产物到输出目录
@@ -282,7 +282,7 @@ Debian package: 安装到 /opt/breakpad; 直接运行 bin/<tool>,
 
 Conan package 导入本地 cache (JFrog Conan 1.x):
   tar xf $(basename "$CONAN_FILE")
-  cd breakpad-$MY_BREAKPAD_VERSION-$ISA_SUFFIX-conan
+  cd breakpad-v$MY_BREAKPAD_VERSION-$ISA_SUFFIX-conan
   conan export-pkg . breakpad/$MY_BREAKPAD_VERSION@ -pf package
 ========================================
 EOF

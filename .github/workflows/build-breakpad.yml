@@ -125,8 +125,8 @@ jobs:
           - \`*.deb\`: Debian package, 安装到 \`/opt/breakpad\` (\`dpkg -i\`).
           - \`*.conan.tar.gz\`: Conan package (JFrog Conan 1.x), 导入本地 cache:
             \`\`\`
-            tar xf breakpad-$VERSION-x64.conan.tar.gz
-            cd breakpad-$VERSION-x64-conan
+            tar xf breakpad-v$VERSION-x64.conan.tar.gz
+            cd breakpad-v$VERSION-x64-conan
             conan export-pkg . breakpad/$VERSION@ -pf package
             \`\`\`
           EOF
